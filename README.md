@@ -1,6 +1,8 @@
 # chatroom
 php + swoole + redis + mysql
 
+导入表信息 cr_user.sql
+
 cp .env.example .env
 
 配置.env信息
