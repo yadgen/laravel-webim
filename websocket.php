@@ -87,7 +87,7 @@ $d['template_system_message'] = <<<EOT
 EOT;
 
 
-$ws_server = new swoole_websocket_server("192.168.16.72", 9501);
+$ws_server = new swoole_websocket_server("192.168.16.29", 9501);
 
 $ws_server->set([
     'worker_num' => 8,
@@ -131,6 +131,7 @@ $ws_server->on('message', function ($ws, $frame) use($d) {
     $frameData = json_decode($frame->data, true);
     $fdList = $d['redis']->smembers($d['swoole_fd_key']);
     $fdCount = count($fdList);
+    $reply_time = date('Y-m-d H:i:s');
 
     switch ($frameData['message_type']) {
         case 1: // onopen
@@ -175,7 +176,6 @@ $ws_server->on('message', function ($ws, $frame) use($d) {
             echo 'message_type:'.$frameData['message_type'];
             break;
         case 3: // send
-            $reply_time = date('Y-m-d H:i:s');
             $frameData['message'] = htmlspecialchars($frameData['message']);
             foreach ($fdList as $fd) {
                 foreach ($d['qqface'] as $k => $v) {
@@ -193,6 +193,19 @@ $ws_server->on('message', function ($ws, $frame) use($d) {
                 ];
                 $ws->push($fd, json_encode($data, JSON_UNESCAPED_UNICODE));
             }
+            break;
+        case 4: // 系统消息
+            // 发送系统通知
+            $message = str_replace(
+                ['{user_id}', '{reply_time}', '{user_name}'],
+                [$data['user_id'], $reply_time, $data['user_name']],
+                $d['template_system_message']
+            );
+            $data = [
+                'message_type' => 4,
+                'message' => $message,
+            ];
+            $ws->push($frame->fd, json_encode($data, JSON_UNESCAPED_UNICODE));
             break;
         default:
             echo "message_type error:".$frameData['message_type'];

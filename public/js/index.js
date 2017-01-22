@@ -2,7 +2,7 @@ $(function() {
     var ws = $.WebSocket("ws://" + server_addr + ":"+port+"");
 
     ws.onopen = function() {
-        var data = '{"message_type":1, "user_id":"'+user_id+'", "user_name":"'+user_name+'"}';
+        var data = '{"message_type":4, "user_id":"'+user_id+'", "user_name":"'+user_name+'"}';
         ws.send(data);
         console.log("socket is open.");
     };
@@ -23,8 +23,12 @@ $(function() {
                 $('.online_user_list_'+data.user_id).remove();
                 $('#online_user_list_count').html(data.online_user_list_count);
                 break;
-            case 3: // send
-                console.log(data.message);
+            case 3: // 用户消息
+                $('#message_list').append(data.message);
+                var message_list_height = parseInt($('#message_list').height());
+                $('.chat-body').scrollTop(message_list_height + 34);
+                break;
+            case 4: // 系统消息
                 $('#message_list').append(data.message);
                 var message_list_height = parseInt($('#message_list').height());
                 $('.chat-body').scrollTop(message_list_height + 34);

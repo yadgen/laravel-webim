@@ -11,7 +11,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <span class="glyphicon glyphicon-earphone"></span>
-                        &nbsp;摩贝那点事儿
+                        &nbsp;程序员的那点事儿
                     </div>
                     <div class="panel-body chat-body">
                         <div class="message-list-body" id="message_list">
@@ -124,7 +124,7 @@
     <script type="text/javascript" src="{{ URL::asset("js/lib/jquery.json.js") }}"></script>
     <script type="text/javascript" src="{{ URL::asset("js/lib/emotion.js") }}"></script>
     <script type="text/javascript">
-        var server_addr = "192.168.16.72";
+        var server_addr = "192.168.16.29";
         var port = "9501";
         var app_url = "{{ $app_url }}";
         var user_id = "{{ $user->id }}";
