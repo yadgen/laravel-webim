@@ -175,7 +175,7 @@ $ws_server->on('message', function ($ws, $frame) use($d) {
         case 2:
             echo 'message_type:'.$frameData['message_type'];
             break;
-        case 3: // send
+        case 3: // 用户消息
             $frameData['message'] = htmlspecialchars($frameData['message']);
             foreach ($fdList as $fd) {
                 foreach ($d['qqface'] as $k => $v) {
