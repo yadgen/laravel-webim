@@ -2,6 +2,9 @@ $(function() {
     var ws = $.WebSocket("ws://" + server_addr + ":"+port+"");
 
     ws.onopen = function() {
+        var data = '{"message_type":1, "user_id":"'+user_id+'", "user_name":"'+user_name+'"}';
+        ws.send(data);
+
         var data = '{"message_type":4, "user_id":"'+user_id+'", "user_name":"'+user_name+'"}';
         ws.send(data);
         console.log("socket is open.");
