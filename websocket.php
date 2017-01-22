@@ -198,7 +198,7 @@ $ws_server->on('message', function ($ws, $frame) use($d) {
             // 发送系统通知
             $message = str_replace(
                 ['{user_id}', '{reply_time}', '{user_name}'],
-                [$data['user_id'], $reply_time, $data['user_name']],
+                [$frameData['user_id'], $reply_time, $frameData['user_name']],
                 $d['template_system_message']
             );
             $data = [
