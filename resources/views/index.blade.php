@@ -124,7 +124,7 @@
     <script type="text/javascript" src="{{ URL::asset("js/lib/jquery.json.js") }}"></script>
     <script type="text/javascript" src="{{ URL::asset("js/lib/emotion.js") }}"></script>
     <script type="text/javascript">
-        var server_addr = "192.168.16.29";
+        var server_addr = "127.0.0.1";
         var port = "9501";
         var app_url = "{{ $app_url }}";
         var user_id = "{{ $user->id }}";
