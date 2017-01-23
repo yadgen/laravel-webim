@@ -86,7 +86,6 @@ $d['template_system_message'] = <<<EOT
 </div>
 EOT;
 
-
 $ws_server = new swoole_websocket_server("127.0.0.1", 9501);
 
 $ws_server->set([
