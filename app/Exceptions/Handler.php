@@ -5,6 +5,9 @@ namespace App\Exceptions;
 use Exception;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Foundation\Testing\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Log;
 
 class Handler extends ExceptionHandler
 {
@@ -44,6 +47,32 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
+        if (config('app.debug', false)) {
+            return parent::render($request, $exception);
+        }
+
+        switch ($exception) {
+            case $exception instanceof NotFoundHttpException:
+                Log::error('Diy Exception: NotFoundHttpException');
+                break;
+            case $exception instanceof HttpException:
+                Log::error('Diy Exception: HttpException');
+                break;
+            default:
+                return parent::render($request, $exception);
+        }
+
+        $code = $exception->getStatusCode();
+        $message  = $exception->getMessage();
+
+        if ($request->expectsJson()) {
+            return response()->json(['error' => $message], $code);
+        }
+
+        if (view()->exists('errors.custom' . $code)) {
+            return response()->view('errors.custom' . $code, ['message' => $message], $code);
+        }
+
         return parent::render($request, $exception);
     }
 

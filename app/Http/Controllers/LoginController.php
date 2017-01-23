@@ -25,6 +25,8 @@ class LoginController extends Controller
         $remember = $request->has('remember') ? true : false;
         if (Auth::attempt(['user_name' => $request['user_name'], 'password' => $request['password']], $remember)) {
             return redirect()->route('index');
+        } else {
+            return redirect()->route('login');
         }
     }
 }
