@@ -53,10 +53,10 @@ class Handler extends ExceptionHandler
 
         switch ($exception) {
             case $exception instanceof NotFoundHttpException:
-                Log::error('Diy Exception: NotFoundHttpException');
+                Log::error('Diy Exception: NotFoundHttpException, StatusCode:'.$exception->getStatusCode());
                 break;
             case $exception instanceof HttpException:
-                Log::error('Diy Exception: HttpException');
+                Log::error('Diy Exception: HttpException，StatusCode:'.$exception->getStatusCode());
                 break;
             default:
                 return parent::render($request, $exception);
