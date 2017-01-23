@@ -87,7 +87,7 @@ $d['template_system_message'] = <<<EOT
 EOT;
 
 
-$ws_server = new swoole_websocket_server("192.168.16.29", 9501);
+$ws_server = new swoole_websocket_server("127.0.0.1", 9501);
 
 $ws_server->set([
     'worker_num' => 8,
