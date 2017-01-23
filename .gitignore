@@ -3,3 +3,4 @@
 /vendor
 /.env
 *.out
+.DS_Store
