@@ -4,3 +4,4 @@
 /.env
 *.out
 .DS_Store
+/public/images/avatar/
