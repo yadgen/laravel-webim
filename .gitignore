@@ -5,6 +5,3 @@ vendor
 *.out
 .DS_Store
 public/images/avatar/
-app/Http/Middleware/TrimStrings.php
-composer.lock
-webpack.mix.js
