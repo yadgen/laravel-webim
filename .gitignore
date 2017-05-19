@@ -1,7 +1,10 @@
 # Created by .ignore support plugin (hsz.mobi)
-/.idea
-/vendor
-/.env
+.idea
+vendor
+.env
 *.out
 .DS_Store
-/public/images/avatar/
+public/images/avatar/
+app/Http/Middleware/TrimStrings.php
+composer.lock
+webpack.mix.js
