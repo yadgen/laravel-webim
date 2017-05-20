@@ -108,7 +108,7 @@ EOT;
 </div>
 EOT;
 
-        $this->serv = new \swoole_websocket_server("127.0.0.1", 9501);
+        $this->serv = new \Swoole\WebSocket\Server("127.0.0.1", 9501);
 
         $this->serv->set([
             'worker_num' => 8,
