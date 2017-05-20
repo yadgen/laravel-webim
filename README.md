@@ -1,5 +1,4 @@
-# chatroom
-php + swoole + redis + mysql
+# Laravel Swoole Chat Room
 
 导入表信息 cr_user.sql
 
@@ -7,6 +6,8 @@ cp .env.example .env
 
 配置.env信息
 
-php websocket.php
+## Usage
 
-比较苦逼，目前server端没有很好的和laravel融合。
+根目录执行以下命令即可启动服务:
+
+`php artisan swoole:websocket`
