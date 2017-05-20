@@ -1,10 +1,14 @@
 # Laravel Swoole Chat Room
 
-导入表信息 cr_user.sql
+基于 Laravel Framework 和 Swoole 开发的聊天室
 
-cp .env.example .env
+## Installation && Configuration
 
-配置.env信息
+导入根目录下的表信息 cr_user.sql
+
+拷贝一份 .env.example 并改名 .env，配置 redis，db 信息
+
+启动 redis
 
 ## Usage
 
