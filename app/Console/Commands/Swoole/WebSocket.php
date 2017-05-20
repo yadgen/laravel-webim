@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Console\Commands\Swoole;
 
 use Illuminate\Console\Command;
 
-class SwooleCommand extends Command
+class WebSocket extends Command
 {
     protected $signature = 'swoole:websocket';
 
