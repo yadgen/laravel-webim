@@ -8,7 +8,7 @@ class WebSocket extends Command
 {
     protected $signature = 'swoole:websocket';
 
-    protected $description = 'Swoole websocket server, start|stop|restart';
+    protected $description = 'Swoole WebSocket Server';
 
     private $serv;
     private $redis;
@@ -18,24 +18,15 @@ class WebSocket extends Command
         parent::__construct();
     }
 
-    public function fire()
+    public function handle()
     {
         $this->info('swoole websocket started');
 
         $d = [];
 
         $d['qqface'] = [
-            '微笑' => '36.gif',
-            '亲亲' => '3.gif',
-            '流泪' => '41.gif',
-            '调皮' => '44.gif',
-            '阴险' => '40.gif',
-            '大笑' => '85.gif',
-            '晕倒' => '96.gif',
-            '白眼' => '80.gif',
-            '脸红' => '75.gif',
-            '妩媚' => '15.gif',
             '疑问' => '1.gif',
+            '亲亲' => '3.gif',
             '尴尬' => '4.gif',
             '啤酒' => '5.gif',
             '吃饭' => '6.gif',
@@ -47,6 +38,7 @@ class WebSocket extends Command
             '折磨' => '12.gif',
             '委屈' => '13.gif',
             '嘘' => '14.gif',
+            '妩媚' => '15.gif',
             '刀' => '16.gif',
             '饥饿' => '17.gif',
             '闭嘴' => '18.gif',
@@ -56,7 +48,15 @@ class WebSocket extends Command
             '难过' => '22.gif',
             '鄙视' => '23.gif',
             '蛋糕' => '24.gif',
-            '哈欠' => '25.gif'
+            '哈欠' => '25.gif',
+            '微笑' => '36.gif',
+            '流泪' => '41.gif',
+            '调皮' => '44.gif',
+            '阴险' => '40.gif',
+            '大笑' => '85.gif',
+            '晕倒' => '96.gif',
+            '白眼' => '80.gif',
+            '脸红' => '75.gif'
         ];
 
         $d['swoole_fd_key'] = 'swoole_fd';
@@ -118,13 +118,13 @@ EOT;
             'debug_mode' => 1,
         ]);
 
-        $this->serv->on('open', function ($ws, $request) use($d) {
+        $this->serv->on('open', function ($ws, $request) use ($d) {
             $this->redis->sadd($d['swoole_fd_key'], $request->fd);
 
             echo "client-{$request->fd} is opened\n";
         });
 
-        $this->serv->on('close', function ($ws, $fd) use($d) {
+        $this->serv->on('close', function ($ws, $fd) use ($d) {
             $this->redis->srem($d['swoole_fd_key'], $fd);
 
             $fd_user = $this->redis->hgetall($d['swoole_fd_user_key']);
@@ -148,7 +148,7 @@ EOT;
             echo "client-{$fd} is closed\n";
         });
 
-        $this->serv->on('message', function ($ws, $frame) use($d) {
+        $this->serv->on('message', function ($ws, $frame) use ($d) {
             $frameData = json_decode($frame->data, true);
             $fdList = $this->redis->smembers($d['swoole_fd_key']);
             $fdCount = count($fdList);
@@ -194,13 +194,13 @@ EOT;
                     }
                     break;
                 case 2:
-                    echo 'message_type:'.$frameData['message_type'];
+                    echo 'message_type:' . $frameData['message_type'];
                     break;
                 case 3: // 用户消息
                     $frameData['message'] = htmlspecialchars($frameData['message']);
                     foreach ($fdList as $fd) {
                         foreach ($d['qqface'] as $k => $v) {
-                            $frameData['message'] = str_replace("[#".$k."]", "<img src='".$frameData['app_url']."/images/qqface/".$v."'>", $frameData['message']);
+                            $frameData['message'] = str_replace("[#" . $k . "]", "<img src='" . $frameData['app_url'] . "/images/qqface/" . $v . "'>", $frameData['message']);
                         }
 
                         $message = str_replace(
@@ -229,7 +229,7 @@ EOT;
                     $ws->push($frame->fd, json_encode($data, JSON_UNESCAPED_UNICODE));
                     break;
                 default:
-                    echo "message_type error:".$frameData['message_type'];
+                    echo "message_type error:" . $frameData['message_type'];
                     break;
             }
         });
