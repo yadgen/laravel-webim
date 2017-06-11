@@ -75,7 +75,7 @@
             </div>
             <div class="form-group">
                 <div style="text-align: center;">
-                    <button id="submit" type="submit" ripple>注册</button>
+                    <button id="submit" type="submit" ripple>提交</button>
                     <a href="{{ url('login') }}">登录？</a>
                 </div>
             </div>
