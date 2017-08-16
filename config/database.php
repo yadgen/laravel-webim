@@ -26,7 +26,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'chatroom'),
+    'default' => env('DB_CONNECTION', 'webim'),
 
     /*
     |--------------------------------------------------------------------------
@@ -52,16 +52,17 @@ return [
             'prefix' => '',
         ],
 
-        'chatroom' => [
+        'webim' => [
             'driver' => 'mysql',
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'chatroom'),
+            'database' => env('DB_DATABASE', 'webim'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', '123456'),
-            'charset' => 'utf8',
-            'collation' => 'utf8_unicode_ci',
-            'prefix' => 'cr_',
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => 'w_',
             'strict' => true,
             'engine' => null,
         ],
@@ -111,16 +112,9 @@ return [
 
         'default' => [
             'host' => env('REDIS_HOST', '127.0.0.1'),
-            'password' => env('REDIS_PASSWORD', 123456),
+//            'password' => env('REDIS_PASSWORD', ''),
             'port' => env('REDIS_PORT', 6379),
-            'database' => 0,
-        ],
-
-        'chatroom' => [
-            'host' => env('CHATROOM_REDIS_HOST', '127.0.0.1'),
-            'password' => env('CHATROOM_REDIS_PASSWORD', 123456),
-            'port' => env('CHATROOM_REDIS_PORT', 6379),
-            'database' => env('CHATROOM_REDIS_DATABASE', 1),
+            'database' => env('REDIS_DATABASE', 15),
         ],
 
     ],

@@ -3,237 +3,174 @@
 namespace App\Console\Commands\Swoole;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Redis;
 
+use App\Console\Commands\Swoole\Storage\WebSocketStorage;
+
+#todo 优化$ws全局变量
 class WebSocket extends Command
 {
     protected $signature = 'swoole:websocket';
 
     protected $description = 'Swoole WebSocket Server';
 
-    private $serv;
-    private $redis;
+    protected $serv;
 
     public function __construct()
     {
         parent::__construct();
+
+        Redis::flushdb();
     }
 
     public function handle()
     {
         $this->info('swoole websocket started');
 
-        $d = [];
-
-        $d['qqface'] = [
-            '疑问' => '1.gif',
-            '亲亲' => '3.gif',
-            '尴尬' => '4.gif',
-            '啤酒' => '5.gif',
-            '吃饭' => '6.gif',
-            '灯泡' => '7.gif',
-            '困' => '8.gif',
-            '抓狂' => '9.gif',
-            '奋斗' => '10.gif',
-            'ok' => '11.gif',
-            '折磨' => '12.gif',
-            '委屈' => '13.gif',
-            '嘘' => '14.gif',
-            '妩媚' => '15.gif',
-            '刀' => '16.gif',
-            '饥饿' => '17.gif',
-            '闭嘴' => '18.gif',
-            '爱你' => '19.gif',
-            '口罩' => '20.gif',
-            '猪头' => '21.gif',
-            '难过' => '22.gif',
-            '鄙视' => '23.gif',
-            '蛋糕' => '24.gif',
-            '哈欠' => '25.gif',
-            '微笑' => '36.gif',
-            '流泪' => '41.gif',
-            '调皮' => '44.gif',
-            '阴险' => '40.gif',
-            '大笑' => '85.gif',
-            '晕倒' => '96.gif',
-            '白眼' => '80.gif',
-            '脸红' => '75.gif'
-        ];
-
-        $d['swoole_fd_key'] = 'swoole_fd';
-        $d['swoole_fd_user_key'] = 'swoole_fd_user';
-        $d['swoole_online_user_list_key'] = 'swoole_online_user_list';
-
-        $this->redis = new \Redis();
-        $this->redis->connect('127.0.0.1', 6379);
-        $this->redis->auth('123456');
-        $this->redis->select(1);
-        $this->redis->flushdb();
-
-// 在线列表模版
-        $d['template_online'] = <<<EOT
-<tr class="online_user_list_{user_id}">
-    <td>{user_name}</td>
-</tr>
-EOT;
-// 聊天内容模版
-        $d['template_message_user'] = <<<EOT
-<div class="clearfix msg-wrap">
-    <div class="msg-head">
-        <span class="msg-name label label-primary pull-left">
-            <span class="glyphicon glyphicon-user"></span>
-            &nbsp;{user_name}
-        </span>
-        <span class="msg-time label label-default pull-left">
-            <span class="glyphicon glyphicon-time"></span>
-            &nbsp;{reply_time}
-        </span>
-    </div>
-    <div class="msg-content">{message}</div>
-</div>
-EOT;
-// 系统内容模版
-        $d['template_system_message'] = <<<EOT
-<div class="clearfix msg-wrap">
-    <div class="msg-head">
-        <span class="msg-name label label-danger pull-left">
-            <span class="glyphicon glyphicon-info-sign"></span>
-            &nbsp;&nbsp;系统消息
-        </span>
-        <span class="msg-time label label-default pull-left">
-            <span class="glyphicon glyphicon-time"></span>
-            &nbsp;&nbsp;{reply_time}
-        </span>
-    </div>
-    <div class="msg-content">欢迎来到酱油聊天室！</div>
-</div>
-EOT;
-
-        $this->serv = new \Swoole\WebSocket\Server('127.0.0.1', 9501);
+        $this->serv = new \Swoole\WebSocket\Server(config('swoole.websocket.host'), config('swoole.websocket.port'));
 
         $this->serv->set([
-            'worker_num' => 8,
-            'daemonize' => false,
-            'max_request' => 10000,
-            'dispatch_mode' => 2,
+            'log_file' => '/var/www/html/webim/swoole.log',
+            'worker_num' => 1,
+            'task_worker_num' => 1,
             'debug_mode' => 1,
         ]);
 
-        $this->serv->on('open', function ($ws, $request) use ($d) {
-            $this->redis->sadd($d['swoole_fd_key'], $request->fd);
-
+        $this->serv->on('open', function ($ws, $request) {
             echo "client-{$request->fd} is opened\n";
         });
 
-        $this->serv->on('close', function ($ws, $fd) use ($d) {
-            $this->redis->srem($d['swoole_fd_key'], $fd);
-
-            $fd_user = $this->redis->hgetall($d['swoole_fd_user_key']);
-            $user_id = $fd_user[$fd];
-            $this->redis->hdel($d['swoole_fd_user_key'], $fd);
-
-            $this->redis->hdel($d['swoole_online_user_list_key'], $user_id);
-
-            // 告诉其他人，某人退出了
-            $fdList = $this->redis->smembers($d['swoole_fd_key']);
-            $fdCount = count($fdList);
-            foreach ($fdList as $fd) {
-                $data = [
-                    'message_type' => 2,
-                    'user_id' => $user_id,
-                    'online_user_list_count' => $fdCount,
+        $this->serv->on('close', function ($ws, $fd) {
+            $user = WebSocketStorage::getUser($fd);
+            if ($user) {
+                $retMsg = [
+                    'cmd' => 'offline',
+                    'fd' => $fd,
+                    'channel' => 0,
+                    'message' => $user['user_name'] . '下线了',
+                    'time' => date('Y-m-d H:i:s')
                 ];
-                $ws->push($fd, json_encode($data, JSON_UNESCAPED_UNICODE));
-            }
+                WebSocketStorage::logout($fd);
 
-            echo "client-{$fd} is closed\n";
+                $this->broadcastJson($ws, $fd, $retMsg);
+            }
         });
 
-        $this->serv->on('message', function ($ws, $frame) use ($d) {
+        $this->serv->on('message', function ($ws, $frame) {
+            $client_id = $frame->fd;
             $frameData = json_decode($frame->data, true);
-            $fdList = $this->redis->smembers($d['swoole_fd_key']);
-            $fdCount = count($fdList);
-            $reply_time = date('Y-m-d H:i:s');
 
-            switch ($frameData['message_type']) {
-                case 1: // onopen
-                    $this->redis->hset($d['swoole_online_user_list_key'], $frameData['user_id'], $frameData['user_name']);
-                    $this->redis->hset($d['swoole_fd_user_key'], $frame->fd, $frameData['user_id']);
-
-                    // 告诉其他人，某人进来了
-                    foreach ($fdList as $fd) {
-                        if ($frame->fd != $fd) {
-                            $message = str_replace(
-                                ['{user_id}', '{user_name}'],
-                                [$frameData['user_id'], $frameData['user_name']],
-                                $d['template_online']
-                            );
-                            $data = [
-                                'message_type' => $frameData['message_type'],
-                                'message' => $message,
-                                'online_user_list_count' => $fdCount,
-                            ];
-
-                            $ws->push($fd, json_encode($data, JSON_UNESCAPED_UNICODE));
-                        }
-                    }
-
-                    // 告诉自己，有哪些人
-                    $user_list = $this->redis->hgetall($d['swoole_online_user_list_key']);
-                    foreach ($user_list as $user_id => $user_name) {
-                        $message = str_replace(
-                            ['{user_id}', '{user_name}'],
-                            [$user_id, $user_name],
-                            $d['template_online']
-                        );
-                        $data = [
-                            'message_type' => $frameData['message_type'],
-                            'message' => $message,
-                            'online_user_list_count' => $fdCount,
-                        ];
-                        $ws->push($frame->fd, json_encode($data, JSON_UNESCAPED_UNICODE));
-                    }
-                    break;
-                case 2:
-                    echo 'message_type:' . $frameData['message_type'];
-                    break;
-                case 3: // 用户消息
-                    $frameData['message'] = htmlspecialchars($frameData['message']);
-                    foreach ($fdList as $fd) {
-                        foreach ($d['qqface'] as $k => $v) {
-                            $frameData['message'] = str_replace("[#" . $k . "]", "<img src='" . $frameData['app_url'] . "/images/qqface/" . $v . "'>", $frameData['message']);
-                        }
-
-                        $message = str_replace(
-                            ['{user_name}', '{reply_time}', '{message}'],
-                            [$frameData['user_name'], $reply_time, $frameData['message']],
-                            $d['template_message_user']
-                        );
-                        $data = [
-                            'message_type' => $frameData['message_type'],
-                            'message' => $message,
-                        ];
-                        $ws->push($fd, json_encode($data, JSON_UNESCAPED_UNICODE));
-                    }
-                    break;
-                case 4: // 系统消息
-                    // 发送系统通知
-                    $message = str_replace(
-                        ['{user_id}', '{reply_time}', '{user_name}'],
-                        [$frameData['user_id'], $reply_time, $frameData['user_name']],
-                        $d['template_system_message']
-                    );
-                    $data = [
-                        'message_type' => 4,
-                        'message' => $message,
-                    ];
-                    $ws->push($frame->fd, json_encode($data, JSON_UNESCAPED_UNICODE));
-                    break;
-                default:
-                    echo "message_type error:" . $frameData['message_type'];
-                    break;
+            if ($frameData['cmd'] == 'login') {
+                $this->cmd_login($ws, $client_id, $frameData);
+            } elseif ($frameData['cmd'] == 'getOnline') {
+                $this->cmd_getOnline($ws, $client_id, $frameData);
+            } elseif ($frameData['cmd'] == 'message') {
+                $this->cmd_message($ws, $client_id, $frameData);
             }
+        });
+
+        $this->serv->on('task', function($ws, $task_id, $from_id, $data) {
+            echo "This Task {$task_id} from Worker {$from_id}\n";
+
+            $start_fd = 0;
+            while(true)
+            {
+                $conn_list = $ws->connection_list($start_fd, 10);
+                if($conn_list === false || count($conn_list) === 0)
+                {
+                    echo "finish\n";
+                    break;
+                }
+                $start_fd = end($conn_list);
+                foreach($conn_list as $fd)
+                {
+                    $ws->push($fd, json_en($data));
+                }
+            }
+
+            return "Task {$task_id}'s result";
+        });
+
+        $this->serv->on('finish', function($ws, $task_id, $data) {
+            echo "Task {$task_id} finish\n";
+            echo "Result: {$data}\n";
         });
 
         $this->serv->start();
+    }
+
+    public function cmd_login($ws, $client_id, $msg)
+    {
+        $resMsg = [
+            'cmd' => 'login',
+            'fd' => $client_id,
+            'user_id' => $msg['user_id'],
+            'user_name' => $msg['user_name'],
+            'user_avatar' => $msg['user_avatar'],
+        ];
+        WebSocketStorage::login($client_id, $resMsg);
+        $ws->push($client_id, json_en($resMsg));
+
+        // 广播给其他在线用户
+        $resMsg['cmd'] = 'newUser';
+        $this->broadcastJson($ws, $client_id, $resMsg);
+
+        $loginMsg = [
+            'cmd' => 'fromMsg',
+            'channel' => 0,
+            'message' => $msg['user_name'] . "上线了",
+            'time' => date('Y-m-d H:i:s')
+        ];
+        $this->broadcastJson($ws, $client_id, $loginMsg);
+    }
+
+    public function cmd_getOnline($ws, $client_id, $msg)
+    {
+        $resMsg = [
+            'cmd' => 'getOnline',
+        ];
+
+        $users = WebSocketStorage::getOnlineUsers();
+        $list = WebSocketStorage::getUsers($users);
+
+        $resMsg['users'] = $users;
+        $resMsg['list'] = $list;
+
+        $ws->push($client_id, json_en($resMsg));
+    }
+
+    public function cmd_message($ws, $client_id, $msg)
+    {
+        $user = WebSocketStorage::getUser($client_id);
+
+        if ($user) {
+            $retMsg = [
+                'cmd' => 'fromMsg',
+                'channel' => 1,
+                'user_name' => $user['user_name'],
+                'user_avatar' => $user['user_avatar'],
+                'message' => $msg['message'],
+                'time' => date('Y-m-d H:i:s'),
+            ];
+            $ws->task($retMsg);
+        }
+    }
+
+    public function broadcastJson($ws, $session_id, $array)
+    {
+        $msg = json_en($array);
+        $this->broadcast($ws, $session_id, $msg);
+    }
+
+    public function broadcast($ws, $current_session_id, $msg)
+    {
+        $users = WebSocketStorage::getOnlineUsers();
+        $list = WebSocketStorage::getUsers($users);
+
+        foreach ($list as $v) {
+            if ($current_session_id != $v['fd']) {
+                $ws->push($v['fd'], $msg);
+            }
+        }
     }
 }

@@ -25,20 +25,20 @@ class RegisterPost extends FormRequest
     public function rules()
     {
         return [
-            'user_name' => 'required|between:3,15|unique:user',
-            'email' => 'required|between:7,40|unique:user',
-            'password' => 'required|min:6|confirmed',
+            'user_name' => 'bail|required|between:3,15|unique:user',
+            'password' => 'bail|required|min:6|confirmed',
+            'email' => 'bail|required|between:7,40|unique:user',
         ];
     }
 
     public function messages()
     {
         return [
-            'required' => ':attritube不能为空。',
-            'unique' => ':attribute已经重复。',
-            'between' => ':attribute长度必须大于等于:min且小于等于:max。',
-            'min' => ':attribute长度必须大于等于:min。',
-            'confirmed' => '两次输入的:attribute不一致。',
+            'required' => ':attribute必填',
+            'unique' => ':attribute重复',
+            'between' => ':attribute长度必须大于等于:min且小于等于:max',
+            'min' => ':attribute长度必须大于等于:min',
+            'confirmed' => '两次输入的:attribute不一致',
         ];
     }
 
@@ -46,8 +46,8 @@ class RegisterPost extends FormRequest
     {
         return [
             'user_name' => '用户名',
+            'password' => '密码',
             'email' => '邮箱',
-            'password' => '密码'
         ];
     }
 

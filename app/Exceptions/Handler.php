@@ -69,8 +69,8 @@ class Handler extends ExceptionHandler
             return response()->json(['error' => $message], $code);
         }
 
-        if (view()->exists('errors.custom' . $code)) {
-            return response()->view('errors.custom' . $code, ['message' => $message], $code);
+        if (view()->exists('errors.' . $code)) {
+            return response()->view('errors.' . $code, ['message' => $message], $code);
         }
 
         return parent::render($request, $exception);

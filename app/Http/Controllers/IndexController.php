@@ -10,11 +10,11 @@ class IndexController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $user->user_avatar = user_avatar();
 
         $data = [
             'user' => $user,
             'server_addr' => $_SERVER['SERVER_ADDR'],
-            'app_url' => $_SERVER['APP_URL'],
         ];
 
         return view('index', $data);

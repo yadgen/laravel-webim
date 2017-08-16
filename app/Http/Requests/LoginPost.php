@@ -33,10 +33,10 @@ class LoginPost extends FormRequest
     public function messages()
     {
         return [
-            'required' => ':attritube不能为空。',
-            'unique' => ':attribute已经重复。',
-            'between' => ':attribute长度必须大于等于:min且小于等于:max。',
-            'min' => ':attribute长度必须大于等于:min。'
+            'required' => ':attribute必填',
+            'unique' => ':attribute重复',
+            'between' => ':attribute长度必须大于等于:min且小于等于:max',
+            'min' => ':attribute长度必须大于等于:min'
         ];
     }
 
