@@ -30,7 +30,7 @@ export function optimize (root: ?ASTElement, options: CompilerOptions) {
 
 function genStaticKeys (keys: string): Function {
   return makeMap(
-    'type,tag,attrsList,attrsMap,plain,parent,children,attrs' +
+    'type,tag,attrsList,attrsMap,plain,parent,children,attrs,start,end,rawAttrsMap' +
     (keys ? ',' + keys : '')
   )
 }
@@ -53,6 +53,15 @@ function markStatic (node: ASTNode) {
       markStatic(child)
       if (!child.static) {
         node.static = false
+      }
+    }
+    if (node.ifConditions) {
+      for (let i = 1, l = node.ifConditions.length; i < l; i++) {
+        const block = node.ifConditions[i].block
+        markStatic(block)
+        if (!block.static) {
+          node.static = false
+        }
       }
     }
   }
@@ -81,14 +90,10 @@ function markStaticRoots (node: ASTNode, isInFor: boolean) {
       }
     }
     if (node.ifConditions) {
-      walkThroughConditionsBlocks(node.ifConditions, isInFor)
+      for (let i = 1, l = node.ifConditions.length; i < l; i++) {
+        markStaticRoots(node.ifConditions[i].block, isInFor)
+      }
     }
-  }
-}
-
-function walkThroughConditionsBlocks (conditionBlocks: ASTIfConditions, isInFor: boolean): void {
-  for (let i = 1, len = conditionBlocks.length; i < len; i++) {
-    markStaticRoots(conditionBlocks[i].block, isInFor)
   }
 }
 

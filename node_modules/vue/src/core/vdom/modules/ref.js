@@ -1,6 +1,6 @@
 /* @flow */
 
-import { remove } from 'shared/util'
+import { remove, isDef } from 'shared/util'
 
 export default {
   create (_: any, vnode: VNodeWithData) {
@@ -19,10 +19,10 @@ export default {
 
 export function registerRef (vnode: VNodeWithData, isRemoval: ?boolean) {
   const key = vnode.data.ref
-  if (!key) return
+  if (!isDef(key)) return
 
   const vm = vnode.context
-  const ref = vnode.child || vnode.elm
+  const ref = vnode.componentInstance || vnode.elm
   const refs = vm.$refs
   if (isRemoval) {
     if (Array.isArray(refs[key])) {
@@ -32,10 +32,11 @@ export function registerRef (vnode: VNodeWithData, isRemoval: ?boolean) {
     }
   } else {
     if (vnode.data.refInFor) {
-      if (Array.isArray(refs[key]) && refs[key].indexOf(ref) < 0) {
-        refs[key].push(ref)
-      } else {
+      if (!Array.isArray(refs[key])) {
         refs[key] = [ref]
+      } else if (refs[key].indexOf(ref) < 0) {
+        // $flow-disable-line
+        refs[key].push(ref)
       }
     } else {
       refs[key] = ref

@@ -1,7 +1,11 @@
-# Created by .ignore support plugin (hsz.mobi)
-.idea
-vendor
+/node_modules
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
 .env
-*.out
-.DS_Store
-public/images/avatar/
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log

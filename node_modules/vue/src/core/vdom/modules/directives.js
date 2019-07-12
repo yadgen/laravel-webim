@@ -1,8 +1,8 @@
 /* @flow */
 
-import { resolveAsset } from 'core/util/options'
-import { mergeVNodeHook } from 'core/vdom/helpers/index'
 import { emptyNode } from 'core/vdom/patch'
+import { resolveAsset, handleError } from 'core/util/index'
+import { mergeVNodeHook } from 'core/vdom/helpers/index'
 
 export default {
   create: updateDirectives,
@@ -40,6 +40,7 @@ function _update (oldVnode, vnode) {
     } else {
       // existing directive, update
       dir.oldValue = oldDir.value
+      dir.oldArg = oldDir.arg
       callHook(dir, 'update', vnode, oldVnode)
       if (dir.def && dir.def.componentUpdated) {
         dirsWithPostpatch.push(dir)
@@ -54,18 +55,18 @@ function _update (oldVnode, vnode) {
       }
     }
     if (isCreate) {
-      mergeVNodeHook(vnode.data.hook || (vnode.data.hook = {}), 'insert', callInsert, 'dir-insert')
+      mergeVNodeHook(vnode, 'insert', callInsert)
     } else {
       callInsert()
     }
   }
 
   if (dirsWithPostpatch.length) {
-    mergeVNodeHook(vnode.data.hook || (vnode.data.hook = {}), 'postpatch', () => {
+    mergeVNodeHook(vnode, 'postpatch', () => {
       for (let i = 0; i < dirsWithPostpatch.length; i++) {
         callHook(dirsWithPostpatch[i], 'componentUpdated', vnode, oldVnode)
       }
-    }, 'dir-postpatch')
+    })
   }
 
   if (!isCreate) {
@@ -86,17 +87,20 @@ function normalizeDirectives (
 ): { [key: string]: VNodeDirective } {
   const res = Object.create(null)
   if (!dirs) {
+    // $flow-disable-line
     return res
   }
   let i, dir
   for (i = 0; i < dirs.length; i++) {
     dir = dirs[i]
     if (!dir.modifiers) {
+      // $flow-disable-line
       dir.modifiers = emptyModifiers
     }
     res[getRawDirName(dir)] = dir
     dir.def = resolveAsset(vm.$options, 'directives', dir.name, true)
   }
+  // $flow-disable-line
   return res
 }
 
@@ -107,6 +111,10 @@ function getRawDirName (dir: VNodeDirective): string {
 function callHook (dir, hook, vnode, oldVnode, isDestroy) {
   const fn = dir.def && dir.def[hook]
   if (fn) {
-    fn(vnode.elm, dir, vnode, oldVnode, isDestroy)
+    try {
+      fn(vnode.elm, dir, vnode, oldVnode, isDestroy)
+    } catch (e) {
+      handleError(e, vnode.context, `directive ${dir.name} ${hook} hook`)
+    }
   }
 }

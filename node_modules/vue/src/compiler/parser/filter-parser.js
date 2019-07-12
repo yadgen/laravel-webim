@@ -1,5 +1,7 @@
 /* @flow */
 
+const validDivisionCharRE = /[\w).+\-_$\]]/
+
 export function parseFilters (exp: string): string {
   let inSingle = false
   let inDouble = false
@@ -55,7 +57,7 @@ export function parseFilters (exp: string): string {
           p = exp.charAt(j)
           if (p !== ' ') break
         }
-        if (!p || !/[\w$]/.test(p)) {
+        if (!p || !validDivisionCharRE.test(p)) {
           inRegex = true
         }
       }
@@ -90,6 +92,6 @@ function wrapFilter (exp: string, filter: string): string {
   } else {
     const name = filter.slice(0, i)
     const args = filter.slice(i + 1)
-    return `_f("${name}")(${exp},${args}`
+    return `_f("${name}")(${exp}${args !== ')' ? ',' + args : args}`
   }
 }

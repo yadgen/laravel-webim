@@ -1,8 +1,36 @@
 /* @flow */
 
 import { inBrowser, isIE9 } from 'core/util/index'
-import { remove } from 'shared/util'
 import { addClass, removeClass } from './class-util'
+import { remove, extend, cached } from 'shared/util'
+
+export function resolveTransition (def?: string | Object): ?Object {
+  if (!def) {
+    return
+  }
+  /* istanbul ignore else */
+  if (typeof def === 'object') {
+    const res = {}
+    if (def.css !== false) {
+      extend(res, autoCssTransition(def.name || 'v'))
+    }
+    extend(res, def)
+    return res
+  } else if (typeof def === 'string') {
+    return autoCssTransition(def)
+  }
+}
+
+const autoCssTransition: (name: string) => Object = cached(name => {
+  return {
+    enterClass: `${name}-enter`,
+    enterToClass: `${name}-enter-to`,
+    enterActiveClass: `${name}-enter-active`,
+    leaveClass: `${name}-leave`,
+    leaveToClass: `${name}-leave-to`,
+    leaveActiveClass: `${name}-leave-active`
+  }
+})
 
 export const hasTransition = inBrowser && !isIE9
 const TRANSITION = 'transition'
@@ -16,18 +44,26 @@ export let animationEndEvent = 'animationend'
 if (hasTransition) {
   /* istanbul ignore if */
   if (window.ontransitionend === undefined &&
-    window.onwebkittransitionend !== undefined) {
+    window.onwebkittransitionend !== undefined
+  ) {
     transitionProp = 'WebkitTransition'
     transitionEndEvent = 'webkitTransitionEnd'
   }
   if (window.onanimationend === undefined &&
-    window.onwebkitanimationend !== undefined) {
+    window.onwebkitanimationend !== undefined
+  ) {
     animationProp = 'WebkitAnimation'
     animationEndEvent = 'webkitAnimationEnd'
   }
 }
 
-const raf = (inBrowser && window.requestAnimationFrame) || setTimeout
+// binding to window is necessary to make hot reload work in IE in strict mode
+const raf = inBrowser
+  ? window.requestAnimationFrame
+    ? window.requestAnimationFrame.bind(window)
+    : setTimeout
+  : /* istanbul ignore next */ fn => fn()
+
 export function nextFrame (fn: Function) {
   raf(() => {
     raf(fn)
@@ -35,8 +71,11 @@ export function nextFrame (fn: Function) {
 }
 
 export function addTransitionClass (el: any, cls: string) {
-  (el._transitionClasses || (el._transitionClasses = [])).push(cls)
-  addClass(el, cls)
+  const transitionClasses = el._transitionClasses || (el._transitionClasses = [])
+  if (transitionClasses.indexOf(cls) < 0) {
+    transitionClasses.push(cls)
+    addClass(el, cls)
+  }
 }
 
 export function removeTransitionClass (el: any, cls: string) {
@@ -53,7 +92,7 @@ export function whenTransitionEnds (
 ) {
   const { type, timeout, propCount } = getTransitionInfo(el, expectedType)
   if (!type) return cb()
-  const event = type === TRANSITION ? transitionEndEvent : animationEndEvent
+  const event: string = type === TRANSITION ? transitionEndEvent : animationEndEvent
   let ended = 0
   const end = () => {
     el.removeEventListener(event, onEnd)
@@ -82,15 +121,16 @@ export function getTransitionInfo (el: Element, expectedType?: ?string): {
   timeout: number;
   hasTransform: boolean;
 } {
-  const styles = window.getComputedStyle(el)
-  const transitioneDelays = styles[transitionProp + 'Delay'].split(', ')
-  const transitionDurations = styles[transitionProp + 'Duration'].split(', ')
-  const transitionTimeout = getTimeout(transitioneDelays, transitionDurations)
-  const animationDelays = styles[animationProp + 'Delay'].split(', ')
-  const animationDurations = styles[animationProp + 'Duration'].split(', ')
-  const animationTimeout = getTimeout(animationDelays, animationDurations)
+  const styles: any = window.getComputedStyle(el)
+  // JSDOM may return undefined for transition properties
+  const transitionDelays: Array<string> = (styles[transitionProp + 'Delay'] || '').split(', ')
+  const transitionDurations: Array<string> = (styles[transitionProp + 'Duration'] || '').split(', ')
+  const transitionTimeout: number = getTimeout(transitionDelays, transitionDurations)
+  const animationDelays: Array<string> = (styles[animationProp + 'Delay'] || '').split(', ')
+  const animationDurations: Array<string> = (styles[animationProp + 'Duration'] || '').split(', ')
+  const animationTimeout: number = getTimeout(animationDelays, animationDurations)
 
-  let type
+  let type: ?string
   let timeout = 0
   let propCount = 0
   /* istanbul ignore if */
@@ -119,7 +159,7 @@ export function getTransitionInfo (el: Element, expectedType?: ?string): {
         : animationDurations.length
       : 0
   }
-  const hasTransform =
+  const hasTransform: boolean =
     type === TRANSITION &&
     transformRE.test(styles[transitionProp + 'Property'])
   return {
@@ -141,6 +181,10 @@ function getTimeout (delays: Array<string>, durations: Array<string>): number {
   }))
 }
 
+// Old versions of Chromium (below 61.0.3163.100) formats floating pointer numbers
+// in a locale-dependent way, using a comma instead of a dot.
+// If comma is not replaced with a dot, the input will be rounded down (i.e. acting
+// as a floor function) causing unexpected behaviors
 function toMs (s: string): number {
-  return Number(s.slice(0, -1)) * 1000
+  return Number(s.slice(0, -1).replace(',', '.')) * 1000
 }
